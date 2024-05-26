@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Users {
+  id         BigInt   @id @default(autoincrement())
+  fullname   String   @db.VarChar(50)
+  email      String   @unique @db.VarChar(50)
+  phone      BigInt   @unique
+  username   String   @unique @db.VarChar(15)
+  password   String   @db.VarChar(50)
+  bio        String?  @db.VarChar(255)
+  is_private Int      @default(0)
+  posts      Posts[]  @relation(name: "user")
+  follower   Follow[] @relation(name: "follower")
+  following  Follow[] @relation(name: "following")
+  created_at DateTime @default(now()) @db.Timestamp()
+
+  @@map("users")
+}
+
+model Follow {
+  id           BigInt   @id @default(autoincrement())
+  follower_id  BigInt
+  following_id BigInt
+  is_accepted  Int
+  created_at   DateTime @default(now()) @db.Timestamp()
+  follower     Users    @relation(fields: [follower_id], references: [id], name: "follower", onUpdate: Cascade, onDelete: Cascade)
+  following    Users    @relation(fields: [following_id], references: [id], name: "following", onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("follow")
+}
+
+model Posts {
+  id               BigInt            @id @default(autoincrement())
+  user_id          BigInt
+  caption          String            @db.VarChar(255)
+  post_attachments PostAttachments[] @relation(name: "postAttachments")
+  created_at       DateTime          @default(now()) @db.Timestamp()
+  deleted_at       DateTime?         @db.Timestamp()
+  user             Users             @relation(fields: [user_id], references: [id], name: "user", onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("posts")
+}
+
+model PostAttachments {
+  id           BigInt @id @default(autoincrement())
+  post_id      BigInt
+  storage_path String @db.VarChar(255)
+  post         Posts  @relation(fields: [post_id], references: [id], name: "postAttachments", onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("post_attachments")
+}
